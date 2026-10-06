@@ -587,8 +587,13 @@ void Scripting::TriggerOnInit() const
     m_store.TriggerOnInit();
 }
 
-void Scripting::TriggerOnUpdate(float aDeltaTime) const
+void Scripting::TriggerOnUpdate(float aDeltaTime)
 {
+    {
+        auto lockedState = GetLockedState();
+        m_override.ApplyPendingOverrides();
+    }
+
     m_store.TriggerOnUpdate(aDeltaTime);
 }
 
@@ -751,6 +756,9 @@ sol::object Scripting::ToLua(LockedState& aState, RED4ext::CStackType& aResult)
         return make_object(state, std::string(static_cast<RED4ext::CString*>(aResult.value)->c_str()));
     if (pType->GetType() == RED4ext::ERTTIType::Handle)
     {
+        if (aResult.value == nullptr)
+            return sol::nil;
+
         const auto handle = *static_cast<RED4ext::Handle<RED4ext::IScriptable>*>(aResult.value);
         if (handle)
             return make_object(state, StrongReference(aState, handle, static_cast<RED4ext::CRTTIHandleType*>(pType)));
